@@ -263,3 +263,4 @@ input.chip{padding:5px 14px;line-height:1.3}
   .qbox{max-width:none;width:100%}
   .nav{justify-self:end}
 }
+.aibox{margin-top:8px}.aibox .btn[disabled]{opacity:.7;cursor:wait}

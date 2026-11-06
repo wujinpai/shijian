@@ -50,3 +50,9 @@
 - edgeone.json 加 SPA fallback rewrite（/* → /index.html），删 site/404.html 与 edge-functions/api/index.js（/api 走 SPA）。
 - 旧 #/ 链接按用户要求不跳转，直接显示 404。/api/v1 浏览器 302 /api/test；未知接口 302 /404。api.html 仅在 .html 路径下跳 /api。
 - app.js v36、SHELL v38。api.html 改名 api-doc.html（Makers 会把 /api 映射到 api.html）。
+
+## v38/v39（2026-11-06）
+- 文件数超 Makers 上限：分片合并 p PS=500、s CH=2000、索引 i 512 片，部署约 4,132 文件。
+- AI 按需：/api/ai/poem?id=、/api/ai/author?a=&d=（lib/ai.js，模型 @makers/deepseek-v4-flash，thinking disabled，6–9 秒；结果 CDN+内存缓存）。前端点击按钮才调用，标「AI 生成，仅供参考」。
+- 简介占位「--」「无传。」（约 2,100 位）视作无简介，显示 AI 按钮（realBio）。
+- 线上 dp1xse0ghbms：app.js v39、SHELL v40、DV v17、app.css v19。

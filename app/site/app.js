@@ -10,7 +10,7 @@ function fetchRetry(u, tries = 3) {
     return fetch(u, { signal: ac.signal }).then(r => { clearTimeout(t); if (!r.ok) throw new Error(r.status + ' ' + u); return r; }, e => { clearTimeout(t); throw e; }); };
   return once().catch(e => tries > 1 ? new Promise(r => setTimeout(r, 400 * (4 - tries))).then(() => fetchRetry(u, tries - 1)) : Promise.reject(e));
 }
-const DV = 'v=16';
+const DV = 'v=17';
 function getJSON(u) {
   if (u.startsWith('/data/')) u += (u.includes('?') ? '&' : '?') + DV;
   if (!cache.has(u)) cache.set(u, fetchRetry(u).then(r => r.json()).catch(e => { cache.delete(u); throw e; }));
@@ -52,7 +52,7 @@ function decode(s) {
   for (let i = 0; i < s.length; i++) { const d = B64I[s.charCodeAt(i)]; v |= (d & 31) << sh; if (d & 32) sh += 5; else { acc += v; out.push(acc); v = 0; sh = 0; } }
   return out;
 }
-async function postings(tok) { const sh = crc32(tok) % 2048; const o = await getJSON(`/data/i/${sh}.json`); return o[tok] ? decode(o[tok]) : []; }
+async function postings(tok) { const sh = crc32(tok) % 512; const o = await getJSON(`/data/i/${sh}.json`); return o[tok] ? decode(o[tok]) : []; }
 function inter(a, b) { const o = []; let i = 0, j = 0; while (i < a.length && j < b.length) { if (a[i] === b[j]) { o.push(a[i]); i++; j++; } else if (a[i] < b[j]) i++; else j++; } return o; }
 const CJK = /[\u3400-\u9fff]/;
 const cjkOnly = s => (s.match(/[\u3400-\u9fff]/g) || []).join('');
@@ -166,6 +166,13 @@ async function viewList(code) {
 }
 
 // 维基百科来源署名（CC BY-SA 4.0）
+// 按需 AI：点按钮才请求 /api/ai/*，结果由节点缓存，同一篇只生成一次
+const AIC = new Map();
+const aiGet = u => { if (!AIC.has(u)) AIC.set(u, fetch(u).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok || !j.text) throw new Error(j.error || '生成失败'); return j.text; }).catch(e => { AIC.delete(u); throw e; })); return AIC.get(u); };
+const realBio = b => !!b && !/^(-+|无传。?)$/.test(String(b).trim());
+const aiBtn = (u, label) => `<div class="aibox"><button class="btn" data-ai="${esc(u)}">${esc(label)}</button></div>`;
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-ai]'); if (!b) return; const box = b.closest('.aibox'); const u = b.dataset.ai, label = b.textContent; b.disabled = true; b.textContent = 'AI 生成中，约需十几秒…';
+  aiGet(u).then(t => { box.innerHTML = paras(t) + '<p class="muted" style="font-size:12px;margin-top:6px">AI 生成，仅供参考</p>'; }, err => { b.disabled = false; b.textContent = label; toast(err.message || '生成失败，请稍后重试'); }); });
 const wikiSrc = a => a && a.bw ? `<p class="muted" style="font-size:12px;margin-top:6px">摘自维基百科<a href="${esc(a.bw)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">《${esc(a.bt || '')}》</a>，<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh-hans" target="_blank" rel="noopener" style="color:inherit">CC BY-SA 4.0</a></p>` : '';
 async function loadAuthor(ref, key, page = 0) {
   if (String(ref).startsWith('x')) { const o = await getJSON(`/data/a/${ref}-${page}.json`); return o; }
@@ -177,7 +184,7 @@ async function viewAuthor(ref, key) {
   setTitle(a.n);
   app.innerHTML = `<div class="ph"><div class="crumb"><a href="/">首页</a> › <a href="/authors">作者</a></div>
    <div class="acard" style="margin:0"><span class="seal">${esc(a.n[0])}</span><div style="flex:1;min-width:0"><h3>${esc(a.n)} <span class="muted">〔${esc(a.d)}〕 · 共 <span id="acnt">${a.pages > 1 ? '约 ' + (a.pages * 500) : a.L.length}</span> 篇</span></h3>
-   ${a.b ? `<div class="bio" id="bio">${paras(a.b)}</div><button class="linkbtn" id="bioT">展开简介</button>${wikiSrc(a)}` : (['佚名', '无名氏'].includes(a.n) ? '<p class="nodata">作者佚名，生平不详。</p>' : '<p class="nodata">暂无简介。</p>')}</div></div></div>
+   ${realBio(a.b) ? `<div class="bio" id="bio">${paras(a.b)}</div><button class="linkbtn" id="bioT">展开简介</button>${wikiSrc(a)}` : (['佚名', '无名氏'].includes(a.n) ? '<p class="nodata">作者佚名，生平不详。</p>' : '<p class="nodata">暂无简介。</p>' + aiBtn(`/api/ai/author?a=${encodeURIComponent(a.n)}&d=${encodeURIComponent(a.d)}`, 'AI 生成简介'))}</div></div></div>
    <div class="toolbar"><input id="af" class="chip" style="cursor:text;min-width:200px;border:1px solid var(--line)" placeholder="在 ${esc(a.n)} 的作品中筛选标题"></div>
    <div class="grid" id="list"></div><div class="more" id="more"></div>`;
   const bt = $('#bioT'); if (bt) { const b = $('#bio'); if (b.scrollHeight <= b.clientHeight + 4) { bt.remove(); b.classList.add('open'); } else bt.onclick = () => { b.classList.toggle('open'); bt.textContent = b.classList.contains('open') ? '收起' : '展开简介'; }; }
@@ -246,6 +253,7 @@ async function viewPoem(id) {
   if (x.cm && x.cm.length) notes.push(`<div class="panel"><h3>评点</h3>${x.cm.map(s => `<p>${esc(s)}</p>`).join('')}</div>`);
   if (x.og && x.og.length) notes.push(`<div class="panel"><h3>郡望</h3><div class="og">${x.og.map(o => `<span><b>${esc(o[0])}</b>${esc(o[1])}</span>`).join('')}</div></div>`);
   if (x.ab) notes.push(`<div class="panel"><h3>题解</h3>${paras(x.ab)}</div>`);
+  if (!x.pr) notes.push(`<div class="panel ai"><h3>AI 释义</h3>${aiBtn('/api/ai/poem?id=' + id, '生成白话释义与赏析')}</div>`);
   const info = [];
   info.push(['合集', `<a href="/c/${c.code}">${esc(c.name)}</a>`]);
   if (g && g !== c.name) info.push([isCi ? '词牌' : c.code === 'yuanqu' ? '曲牌' : isShi ? '体裁' : '分类', gi >= 0 ? `<a href="/c/${c.code}?g=${gi}">${esc(g)}</a>` : `<a href="/s?q=${encodeURIComponent(g)}">${esc(g)}</a>`]);
@@ -286,7 +294,7 @@ async function viewPoem(id) {
   loadAuthor(ref, aKey).then(au => {
     const box = $('#bioBox'); if (!box || !live()) return;
     const nm = `<p><a href="/a/${ref}/${encodeURIComponent(aKey)}" style="color:var(--ink);font-weight:700;font-size:17px">${esc(a)}</a> <span class="muted">〔${esc(dyn)}〕</span></p>`;
-    box.innerHTML = nm + (au && au.b ? `<div class="bio" id="bio">${paras(au.b)}</div><button class="linkbtn" id="bioT">展开</button>${wikiSrc(au)}` : (['佚名', '无名氏'].includes(a) ? '<p class="nodata">作者佚名，生平不详。</p>' : '<p class="nodata">暂无简介。</p>')) + `<p style="margin-top:8px"><a class="linkbtn" href="/a/${ref}/${encodeURIComponent(aKey)}">查看作品 ›</a></p>`;
+    box.innerHTML = nm + (au && realBio(au.b) ? `<div class="bio" id="bio">${paras(au.b)}</div><button class="linkbtn" id="bioT">展开</button>${wikiSrc(au)}` : (['佚名', '无名氏'].includes(a) ? '<p class="nodata">作者佚名，生平不详。</p>' : '<p class="nodata">暂无简介。</p>' + aiBtn(`/api/ai/author?a=${encodeURIComponent(a)}&d=${encodeURIComponent(dyn)}`, 'AI 生成简介'))) + `<p style="margin-top:8px"><a class="linkbtn" href="/a/${ref}/${encodeURIComponent(aKey)}">查看作品 ›</a></p>`;
     const bt = $('#bioT'); if (bt) { const b = $('#bio'); if (b.scrollHeight <= b.clientHeight + 4) { bt.remove(); b.classList.add('open'); } else bt.onclick = () => { b.classList.toggle('open'); bt.textContent = b.classList.contains('open') ? '收起' : '展开'; }; }
   }).catch(() => { const box = $('#bioBox'); if (box && live()) box.innerHTML = '<p class="nodata">简介加载失败</p>'; });
   // actions

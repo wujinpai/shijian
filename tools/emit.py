@@ -13,7 +13,7 @@ for _m in M['colls']:
     _m.setdefault('mc', _m['count']); _m['count'] = _n.get(_m['code'], 0)
 # 维基百科补充简介（tools/wiki_bios.py 生成；仅用于原本无简介的作者，带出处 bw/bt）
 WIKI = json.load(open(B + '/wiki_bios.json')) if os.path.exists(B + '/wiki_bios.json') else {}
-PS, CH, AB = 100, 250, 256
+PS, CH, AB = 500, 2000, 256
 FAMOUS_SONG = set('苏轼 陆游 王安石 杨万里 黄庭坚 范成大 欧阳修 梅尧臣 苏舜钦 林逋 晏殊 秦观 陈与义 朱熹 文天祥 辛弃疾 李清照 姜夔 刘克庄 戴复古 曾巩 苏辙 叶绍翁 赵师秀 翁卷 卢梅坡 程颢 王令 张俞 雷震 志南 林升 范仲淹 寇准 晏几道 周邦彦 柳永 岳飞 陈师道 张耒 晁补之 汪藻 吕本中 曾几 尤袤 萧德藻 严羽 谢枋得 郑思肖 汪元量'.split())
 
 def dump(path, obj):

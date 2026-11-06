@@ -3,7 +3,7 @@ import json, os, re, sys, shutil, zlib
 import numpy as np
 B = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/build'
 D = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/app/site/data/i'
-S = int(sys.argv[1]) if len(sys.argv) > 1 else 2048
+S = int(sys.argv[1]) if len(sys.argv) > 1 else 512
 DRY = '--dry' in sys.argv
 C = json.load(open(B + '/corpus.json'))
 CJK = re.compile(r'[\u3400-\u9fff]+')
