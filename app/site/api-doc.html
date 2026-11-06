@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<script>if(!/bot|crawl|spider/i.test(navigator.userAgent)&&/\.html$/.test(location.pathname))location.replace('/api')</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>开放 API · 诗笺</title>
+<meta name="description" content="诗笺开放 API：免费查询八十余万篇中国古典诗词与典籍，支持全文检索、作者、随机一首。">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--bg:#f5efe3;--card:#fbf8f2;--ink:#2a2622;--mute:#7a7066;--line:#e4dccd;--accent:#a8382b;--code:#efe7d8}
+@media (prefers-color-scheme:dark){:root{--bg:#161513;--card:#1f1d1a;--ink:#e9e3d8;--mute:#9a9084;--line:#34302a;--accent:#d0675a;--code:#2a2723}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 "ShiciSerif","Noto Serif SC","Songti SC",serif}
+header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+header a{color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700}
+header img{width:34px;height:34px;border-radius:8px}
+main{max-width:860px;margin:0 auto;padding:24px 20px 60px}
+h1{font-size:30px;margin:8px 0 4px}h2{font-size:22px;margin:36px 0 10px;padding-left:12px;border-left:4px solid var(--accent)}h3{font-size:17px;margin:22px 0 6px}
+p,li{color:var(--ink)}.mute{color:var(--mute)}
+a{color:var(--accent)}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px}
+code{background:var(--code);padding:1px 6px;border-radius:5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;line-height:1.55}
+pre code{background:none;padding:0}
+.ep{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 18px 14px;margin:14px 0}
+.m{display:inline-block;background:var(--accent);color:#fff;border-radius:6px;padding:0 8px;font:600 12.5px/22px ui-monospace,Menlo,monospace;margin-right:8px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}th{color:var(--mute);font-weight:600}
+.try{display:flex;gap:8px;margin:10px 0}.try input{flex:1;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+.try button{padding:9px 16px;border:0;border-radius:10px;background:var(--accent);color:#fff;font:inherit;cursor:pointer}
+#out{max-height:420px}
+footer{text-align:center;color:var(--mute);font-size:14px;padding:20px}
+</style>
+</head>
+<body>
+<header><a href="/"><img src="/apple-touch-icon.png" alt="">诗笺</a><span class="mute">· 开放 API</span><span style="flex:1"></span><a href="/api/test" style="font-size:15px">调试台</a></header>
+<main>
+<h1>诗笺开放 API</h1>
+<p class="mute">免费查询中国古典诗词与典籍：从先秦到近代，八十余万篇。无需注册，无需密钥，支持跨域调用。</p>
+
+<h2>基本信息</h2>
+<table>
+<tr><th>地址</th><td><code>https://shijian.jisu.cn/api/v1</code></td></tr>
+<tr><th>方法</th><td>只支持 <code>GET</code>，返回 JSON（UTF-8）</td></tr>
+<tr><th>跨域</th><td>已开启 CORS（<code>Access-Control-Allow-Origin: *</code>），浏览器可直接调用</td></tr>
+<tr><th>限流</th><td>每个 IP 每分钟 60 次，超出返回 <code>429</code></td></tr>
+<tr><th>缓存</th><td>除随机接口外，结果会在 CDN 缓存一天</td></tr>
+<tr><th>数据</th><td>正文来自 <a href="https://github.com/wujinpai/chinese-classics" target="_blank" rel="noopener">chinese-classics</a>，均为公版古籍；接口只提供正文，不含注释与赏析</td></tr>
+</table>
+
+<h3>在线试用</h3>
+<div class="try"><input id="u" value="/api/v1/search?q=明月&size=3" aria-label="请求地址"><button id="go">请求</button></div>
+<pre id="out"><code>点「请求」看返回结果</code></pre>
+
+<h2>接口</h2>
+
+<div class="ep">
+<h3><span class="m">GET</span>/api/v1/search</h3>
+<p>全文检索标题与正文。输入的每段连续汉字须在原文中连续出现（不跨标点），多段之间为「且」关系。单个汉字按前缀匹配。</p>
+<table>
+<tr><th>参数</th><th>说明</th></tr>
+<tr><td><code>q</code></td><td>必填，检索词，如 <code>床前明月光</code>、<code>明月 故乡</code></td></tr>
+<tr><td><code>in</code></td><td>可选，<code>title</code> 只搜标题，<code>content</code> 只搜正文；默认都搜</td></tr>
+<tr><td><code>author</code></td><td>可选，作者名精确匹配，如 <code>李白</code></td></tr>
+<tr><td><code>era</code></td><td>可选，朝代分区：先秦、秦汉、魏晋南北朝、隋、唐、五代、宋、辽金、元、明、清、近代</td></tr>
+<tr><td><code>dynasty</code></td><td>可选，具体朝代，如 <code>北宋</code>、<code>南宋</code></td></tr>
+<tr><td><code>kind</code></td><td>可选，<code>诗</code>、<code>词</code>、<code>曲</code>、<code>典籍</code></td></tr>
+<tr><td><code>page</code> / <code>size</code></td><td>可选，页码（1–100）与每页条数（1–50，默认 20）</td></tr>
+</table>
+<pre><code>GET /api/v1/search?q=床前明月光&amp;size=1
+
+{
+  "query": "床前明月光", "page": 1, "size": 1, "has_more": false,
+  "data": [{ "id": 41910, "title": "静夜思", "author": "李白", "author_id": 2692,
+             "dynasty": "唐", "era": "唐", "kind": "诗",
+             "excerpt": "床前明月光，疑是地上霜。",
+             "url": "https://shijian.jisu.cn/api/v1/poems/41910" }]
+}</code></pre>
+</div>
+
+<div class="ep">
+<h3><span class="m">GET</span>/api/v1/poems/{id}</h3>
+<p>按 id 取一篇作品全文。<code>paragraphs</code> 为分段正文；词有 <code>rhythmic</code>（词牌），典籍有 <code>book</code>（书名）、<code>chapter</code>（篇章）。</p>
+<pre><code>{
+  "data": { "id": 41910, "title": "静夜思", "author": "李白", "author_id": 2692,
+            "dynasty": "唐", "era": "唐", "kind": "诗",
+            "paragraphs": ["床前看月光，疑是地上霜。", "举头望山月，低头思故乡。"],
+            "url": "https://shijian.jisu.cn/api/v1/poems/41910" }
+}</code></pre>
+</div>
+
+<div class="ep">
+<h3><span class="m">GET</span>/api/v1/random</h3>
+<p>随机一首，不缓存。可选 <code>era</code>、<code>dynasty</code>、<code>kind</code> 过滤；<code>famous=1</code> 只从唐诗三百首中选。</p>
+<pre><code>GET /api/v1/random?kind=词&amp;era=宋</code></pre>
+</div>
+
+<div class="ep">
+<h3><span class="m">GET</span>/api/v1/authors?q={作者名}</h3>
+<p>按作者名查找（精确或前缀），按作品数排序。同名不同人会分别列出，可用 <code>dynasty</code> 区分。</p>
+<pre><code>{ "query": "李白", "data": [{ "id": 2692, "name": "李白", "dynasty": "唐", "era": "唐", "works": 1649 }] }</code></pre>
+</div>
+
+<div class="ep">
+<h3><span class="m">GET</span>/api/v1/authors/{id}</h3>
+<p>作者小传与作品列表（分页，<code>page</code>、<code>size</code> 最大 100）。</p>
+<pre><code>{ "data": { "id": 2692, "name": "李白", "dynasty": "唐", "intro": "李白，字太白……", "works": 1649,
+            "page": 1, "size": 50, "list": [{ "id": 41910, "title": "静夜思", "kind": "诗" }] } }</code></pre>
+</div>
+
+<div class="ep">
+<h3><span class="m">GET</span>/api/v1/stats</h3>
+<p>收录总数与各朝代、体裁的篇数。</p>
+</div>
+
+<h2>错误</h2>
+<p>出错时返回对应 HTTP 状态码和：</p>
+<pre><code>{ "error": { "code": "rate_limited", "message": "请求过于频繁：每个 IP 每分钟 60 次" } }</code></pre>
+<table>
+<tr><th>状态码</th><th>code</th><th>含义</th></tr>
+<tr><td>400</td><td>bad_query / bad_id</td><td>参数缺失或格式不对</td></tr>
+<tr><td>404</td><td>not_found</td><td>没有这篇作品或作者</td></tr>
+<tr><td>405</td><td>method_not_allowed</td><td>只支持 GET</td></tr>
+<tr><td>429</td><td>rate_limited</td><td>超出限流，稍后再试</td></tr>
+<tr><td>502</td><td>upstream_error</td><td>数据服务暂时不可用</td></tr>
+</table>
+
+<h2>示例</h2>
+<pre><code>// JavaScript
+const r = await fetch('https://shijian.jisu.cn/api/v1/random?famous=1');
+const { data } = await r.json();
+console.log(data.title, data.author, data.paragraphs.join(''));
+
+# curl
+curl 'https://shijian.jisu.cn/api/v1/search?q=春眠不觉晓'</code></pre>
+
+<h2>使用说明</h2>
+<ul>
+<li>古籍正文为公有领域，可自由使用；欢迎在页面上注明「数据来自诗笺 shijian.jisu.cn」。</li>
+<li>作品 id 稳定，可以放心保存引用。</li>
+<li>请合理调用，批量需求请缓存结果，不要用于全量抓取。</li>
+</ul>
+</main>
+<footer><a href="/">返回诗笺</a> · <a href="/about">关于本站</a></footer>
+<script>
+const u=document.getElementById('u'),out=document.querySelector('#out code');
+async function go(){out.textContent='请求中…';try{const r=await fetch(u.value.trim());const t=await r.text();try{out.textContent=JSON.stringify(JSON.parse(t),null,2)}catch(e){out.textContent=t}}catch(e){out.textContent='请求失败：'+e.message}}
+document.getElementById('go').onclick=go;u.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+</script>
+</body>
+</html>

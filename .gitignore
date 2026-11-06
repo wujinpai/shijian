@@ -1,0 +1,6 @@
+node_modules/
+.edgeone/
+.env
+.secrets/
+app/lib/turso-token.js
+__pycache__/
