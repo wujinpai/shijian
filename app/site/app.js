@@ -300,7 +300,7 @@ async function viewPoem(id) {
   // actions
   const text = `${t}\n〔${dyn}〕${a}\n${p.join('\n')}`;
   $('#bCopy').onclick = () => copy(text + `\n—— ${location.href}`, '已复制全文');
-  const shareLink = async () => { if (navigator.share) { try { await navigator.share({ title: `${t} · ${a}`, text: p.slice(0, 2).join(''), url: location.href }); } catch (e) {} } else copy(location.href, '已复制链接'); };
+  const shareLink = async () => { if (navigator.share) { try { await navigator.share({ title: `${t} · ${a}`, url: location.href }); } catch (e) {} } else copy(location.href, '已复制链接'); };
   $('#bShare').onclick = () => posterModal(t, a, dyn, p, prose, shareLink);
   $('#bFav').onclick = () => { let f = favs(); if (f.includes(id)) { f = f.filter(v => v !== id); toast('已取消收藏'); } else { f.unshift(id); toast('已收藏'); } setFavs(f); const on = f.includes(id); $('#bFav').classList.toggle('on', on); $('#bFav').querySelector('i').textContent = on ? '★' : '☆'; };
   const pe = $('#poem'), bv = $('#bVert'), bp = $('#bPy');
@@ -533,7 +533,7 @@ async function viewSaid(qs) {
     box.querySelectorAll('.said').forEach(el => { const x = list[+el.dataset.i];
       el.querySelector('[data-card]').onclick = () => { const lines = x.quote.replace(/([。！？；])/g, '$1\n').split('\n').map(s => s.trim()).filter(Boolean);
         const url = location.origin + '/p/' + x.pid;
-        posterModal(x.title || x.author, x.author, x.dynasty || '', lines, false, async () => { if (navigator.share) { try { await navigator.share({ title: `古人说 · ${q}`, text: x.quote, url }); } catch (e) {} } else copy(url, '已复制链接'); }); };
+        posterModal(x.title || x.author, x.author, x.dynasty || '', lines, false, async () => { if (navigator.share) { try { await navigator.share({ title: `古人说 · ${q}`, url }); } catch (e) {} } else copy(url, '已复制链接'); }); };
     });
   } else box.innerHTML = '<p class="muted" style="margin-top:14px">全站诗文里没找到贴切的句子，换个说法试试。</p>';
   const raw = cjkOnly(q); if (!list.length && raw.length >= 2 && raw.length <= 8) $('#sraw').innerHTML = `<p class="hint" style="text-align:center;margin-top:18px"><a href="/s?q=${encodeURIComponent(raw)}&t=1" style="color:var(--accent)">在诗文中搜索含「${esc(raw)}」的原句 ›</a></p>`;
