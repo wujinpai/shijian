@@ -45,7 +45,7 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:20px}
 <tr><th>方法</th><td>只支持 <code>GET</code>，返回 JSON（UTF-8）</td></tr>
 <tr><th>跨域</th><td>已开启 CORS（<code>Access-Control-Allow-Origin: *</code>），浏览器可直接调用</td></tr>
 <tr><th>限流</th><td>每个 IP 每分钟 60 次，超出返回 <code>429</code></td></tr>
-<tr><th>缓存</th><td>除随机接口外，结果会在 CDN 缓存一天</td></tr>
+<tr><th>缓存</th><td>除随机接口外，CDN 节点缓存 60 天，浏览器缓存 1 天</td></tr>
 <tr><th>数据</th><td>正文来自 <a href="https://github.com/wujinpai/chinese-classics" target="_blank" rel="noopener">chinese-classics</a>，均为公版古籍；接口只提供正文，不含注释与赏析</td></tr>
 </table>
 

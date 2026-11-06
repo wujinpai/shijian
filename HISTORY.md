@@ -56,3 +56,4 @@
 - AI 按需：/api/ai/poem?id=、/api/ai/author?a=&d=（lib/ai.js，模型 @makers/deepseek-v4-flash，thinking disabled，6–9 秒；结果 CDN+内存缓存）。前端点击按钮才调用，标「AI 生成，仅供参考」。
 - 简介占位「--」「无传。」（约 2,100 位）视作无简介，显示 AI 按钮（realBio）。
 - 线上 dp1xse0ghbms：app.js v39、SHELL v40、DV v17、app.css v19。
+- v40（dpnvcq3ao9xv）：AI 简介/释义生成后移除「暂无简介。」；api-doc 缓存说明改为节点 60 天、浏览器 1 天。app.js v40、SHELL v41。

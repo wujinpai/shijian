@@ -171,8 +171,8 @@ const AIC = new Map();
 const aiGet = u => { if (!AIC.has(u)) AIC.set(u, fetch(u).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok || !j.text) throw new Error(j.error || '生成失败'); return j.text; }).catch(e => { AIC.delete(u); throw e; })); return AIC.get(u); };
 const realBio = b => !!b && !/^(-+|无传。?)$/.test(String(b).trim());
 const aiBtn = (u, label) => `<div class="aibox"><button class="btn" data-ai="${esc(u)}">${esc(label)}</button></div>`;
-document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-ai]'); if (!b) return; const box = b.closest('.aibox'); const u = b.dataset.ai, label = b.textContent; b.disabled = true; b.textContent = 'AI 生成中，约需十几秒…';
-  aiGet(u).then(t => { box.innerHTML = paras(t) + '<p class="muted" style="font-size:12px;margin-top:6px">AI 生成，仅供参考</p>'; }, err => { b.disabled = false; b.textContent = label; toast(err.message || '生成失败，请稍后重试'); }); });
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-ai]'); if (!b) return; const box = b.closest('.aibox'); const u = b.dataset.ai, label = b.textContent; b.disabled = true; b.textContent = 'AI 生成中，约需几秒…';
+  aiGet(u).then(t => { const pv = box.previousElementSibling; if (pv && pv.classList.contains('nodata')) pv.remove(); box.innerHTML = paras(t) + '<p class="muted" style="font-size:12px;margin-top:6px">AI 生成，仅供参考</p>'; }, err => { b.disabled = false; b.textContent = label; toast(err.message || '生成失败，请稍后重试'); }); });
 const wikiSrc = a => a && a.bw ? `<p class="muted" style="font-size:12px;margin-top:6px">摘自维基百科<a href="${esc(a.bw)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">《${esc(a.bt || '')}》</a>，<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh-hans" target="_blank" rel="noopener" style="color:inherit">CC BY-SA 4.0</a></p>` : '';
 async function loadAuthor(ref, key, page = 0) {
   if (String(ref).startsWith('x')) { const o = await getJSON(`/data/a/${ref}-${page}.json`); return o; }
