@@ -10,7 +10,7 @@ function fetchRetry(u, tries = 3) {
     return fetch(u, { signal: ac.signal }).then(r => { clearTimeout(t); if (!r.ok) throw new Error(r.status + ' ' + u); return r; }, e => { clearTimeout(t); throw e; }); };
   return once().catch(e => tries > 1 ? new Promise(r => setTimeout(r, 400 * (4 - tries))).then(() => fetchRetry(u, tries - 1)) : Promise.reject(e));
 }
-const DV = 'v=17';
+const DV = 'v=18';
 function getJSON(u) {
   if (u.startsWith('/data/')) u += (u.includes('?') ? '&' : '?') + DV;
   if (!cache.has(u)) cache.set(u, fetchRetry(u).then(r => r.json()).catch(e => { cache.delete(u); throw e; }));
@@ -173,7 +173,7 @@ const realBio = b => !!b && !/^(-+|无传。?)$/.test(String(b).trim());
 const aiBtn = (u, label) => `<div class="aibox"><button class="btn" data-ai="${esc(u)}">${esc(label)}</button></div>`;
 document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-ai]'); if (!b) return; const box = b.closest('.aibox'); const u = b.dataset.ai, label = b.textContent; b.disabled = true; b.textContent = 'AI 生成中，约需几秒…';
   aiGet(u).then(t => { const pv = box.previousElementSibling; if (pv && pv.classList.contains('nodata')) pv.remove(); box.innerHTML = paras(t) + '<p class="muted" style="font-size:12px;margin-top:6px">AI 生成，仅供参考</p>'; }, err => { b.disabled = false; b.textContent = label; toast(err.message || '生成失败，请稍后重试'); }); });
-const wikiSrc = a => a && a.bw ? `<p class="muted" style="font-size:12px;margin-top:6px">摘自维基百科<a href="${esc(a.bw)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">《${esc(a.bt || '')}》</a>，<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh-hans" target="_blank" rel="noopener" style="color:inherit">CC BY-SA 4.0</a></p>` : '';
+const wikiSrc = a => a && a.bc ? `<p class="muted" style="font-size:12px;margin-top:6px">据<a href="https://cbdb.hsites.harvard.edu/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">中国历代人物传记资料库（CBDB）</a>整理，<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans" target="_blank" rel="noopener" style="color:inherit">CC BY-NC-SA 4.0</a></p>` : a && a.bw ? `<p class="muted" style="font-size:12px;margin-top:6px">摘自维基百科<a href="${esc(a.bw)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">《${esc(a.bt || '')}》</a>，<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh-hans" target="_blank" rel="noopener" style="color:inherit">CC BY-SA 4.0</a></p>` : '';
 async function loadAuthor(ref, key, page = 0) {
   if (String(ref).startsWith('x')) { const o = await getJSON(`/data/a/${ref}-${page}.json`); return o; }
   const o = await getJSON(`/data/a/${ref}.json`); const a = o[key]; if (a) a.pages = 1; return a;
@@ -458,7 +458,7 @@ async function viewAbout() {
   const withNotes = { huajian: '注释', nantang: '注释', shuimo: '赏析', youmeng: '评点', tang: '唐诗三百首标签；部分篇目附《水墨唐诗》赏析', songci: '宋词三百首标签', mengxue: '千字文拼音、百家姓郡望、题解', guwen: '出处', xiantang: '朝代分类', xinshi: '部分作者简介' };
   app.innerHTML = `<div class="ph"><h1>关于本站</h1></div><div class="panel" style="max-width:760px">
    <p>本站收录的古典诗词与典籍数据来自 <a href="https://github.com/wujinpai/chinese-classics" target="_blank" rel="noopener" style="color:var(--accent)">chinese-classics</a>。「古人说」的精选句由本站从上述原文中整理，每句都链到原文。原文为繁体者已用 OpenCC 转为简体，个别异体字可能保留原貌。本站另提供<a href="/api" style="color:var(--accent)">开放 API</a>。</p>
-   <p>注释、赏析、评点与作者简介均来自数据源，没有的篇目不另行生成。部分作者简介摘自<a href="https://zh.wikipedia.org/" target="_blank" rel="noopener" style="color:var(--accent)">中文维基百科</a>，依 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh-hans" target="_blank" rel="noopener" style="color:var(--accent)">CC BY-SA 4.0</a> 使用，并在简介下注明条目出处。唐诗、宋诗的体裁按句数与字数推断，排序参考数据集中的搜索引擎热度。</p>
+   <p>注释、赏析、评点与作者简介均来自数据源，没有的篇目不另行生成。部分作者简介摘自<a href="https://zh.wikipedia.org/" target="_blank" rel="noopener" style="color:var(--accent)">中文维基百科</a>，依 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh-hans" target="_blank" rel="noopener" style="color:var(--accent)">CC BY-SA 4.0</a> 使用，并在简介下注明条目出处；另有部分作者简介据哈佛大学<a href="https://cbdb.hsites.harvard.edu/" target="_blank" rel="noopener" style="color:var(--accent)">中国历代人物传记资料库（CBDB）</a>的生卒、字号、籍贯、仕历、著作字段整理，依 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans" target="_blank" rel="noopener" style="color:var(--accent)">CC BY-NC-SA 4.0</a> 非商业使用。唐诗、宋诗的体裁按句数与字数推断，排序参考数据集中的搜索引擎热度。</p>
    <h3 style="margin-top:14px">收录合集</h3>
    ${m.cats ? `<div class="kv">${m.cats.cats.map(([n, v]) => `<b>${esc(n)}</b><span>${v.toLocaleString()} 篇</span>`).join('')}</div>
    <p class="muted" style="margin-top:8px">共 ${m.cats.total.toLocaleString()} 篇。</p>`

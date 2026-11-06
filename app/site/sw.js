@@ -1,6 +1,6 @@
 // 诗词 service worker: cache-first for immutable data/fonts, network-first for the app shell.
-const SHELL = 'shici-shell-v41', DATA = 'shici-data-v17', MAX = 900;
-self.addEventListener('install', e => { e.waitUntil(caches.open(SHELL).then(c => c.addAll(['/', '/app.js?v=40', '/app.css?v=19', '/fonts/fonts.css'])).catch(() => {})); self.skipWaiting(); });
+const SHELL = 'shici-shell-v42', DATA = 'shici-data-v18', MAX = 900;
+self.addEventListener('install', e => { e.waitUntil(caches.open(SHELL).then(c => c.addAll(['/', '/app.js?v=41', '/app.css?v=19', '/fonts/fonts.css'])).catch(() => {})); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== SHELL && k !== DATA).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 async function trim() { const c = await caches.open(DATA); const ks = await c.keys(); for (let i = 0; i < ks.length - MAX; i++) await c.delete(ks[i]); }
 self.addEventListener('fetch', e => {

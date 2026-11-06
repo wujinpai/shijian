@@ -57,3 +57,8 @@
 - 简介占位「--」「无传。」（约 2,100 位）视作无简介，显示 AI 按钮（realBio）。
 - 线上 dp1xse0ghbms：app.js v39、SHELL v40、DV v17、app.css v19。
 - v40（dpnvcq3ao9xv）：AI 简介/释义生成后移除「暂无简介。」；api-doc 缓存说明改为节点 60 天、浏览器 1 天。app.js v40、SHELL v41。
+
+## v41（2026-11-06）CBDB 作者简介
+- 用户不愿付费 AI 批量生成。改用 CBDB（哈佛中国历代人物传记资料库 20261031 sqlite，CC BY-NC-SA 4.0，用户确认站点非商用）按「姓名(t2s)+朝代组」唯一匹配：14,971 位缺简介中唯一 4,973、重名 2,590、未收 7,408；有内容的 4,402 位用模板拼（生卒、字号谥、籍贯、入仕、官职≤3、著作≤3，去「卷数」与含「某」的官名），不经 AI。
+- 数据：shici/build_cb_bios.json（键 作者|朝代）→ build/cb_bios.json（键 朝代组|作者）；emit.py 已接 CBB（仅补空/「--」「无传。」），作者对象带 bc=CBDB personid；已就地写入 site/data/a 与 authors.json 标记。
+- 前端：wikiSrc 支持 bc 署名 CBDB + CC BY-NC-SA；关于页加说明。app.js v41、SHELL v42、DV v18。线上 dpzqfs9nca8g，已清缓存。剩约 1 万位仍走 AI 按钮。
