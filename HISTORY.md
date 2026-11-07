@@ -75,3 +75,10 @@
 - API：search.js ORDER BY f.rowid → f.rank（FTS5 bm25 相关度，部署后验证搜索）；random.js max_id 缓存加 1 小时 TTL（原来模块级变量永不刷新）。
 - 可访问性：:focus-visible 统一样式、skip link、搜索框 label、首页随机按钮由 <a href="javascript:void 0"> 改为 <button>、prefers-reduced-motion。
 - app.js v43、SHELL v44、DV v19、DATA v19、app.css v20。未做：注释/赏析覆盖率（内容工作）、站点与 API 作者数差 470 位（站点 30,431 / API 30,901，待核对口径）。
+
+## v44（2026-11-07）作者朝代标签统一（站点与 API 同一规则）
+- 原因：站点 30,431 位 vs API 30,901 位，差 470。live Turso 只读核对：两边是同一批 29,771 位作者、785,947 篇，一个不少；零作品作者 0。差全在计数口径：API 按（人名，era）计，1,017 人跨朝代占多行；站点按（朝代，人名）计且唐/五代合并，622 人多行；另 3,127 人两边朝代标签不同（站点取首诗朝代，API 用仓库 era）。根子是站点 load.py 会把过渡朝代归一（DYN_NORM：明末清初→明、元末明初→元、唐末宋初→五代、近代→近现代）并按作者合并相邻/零星朝代，API 原样保留。
+- 统一规则：tools/dyn_norm.py（DYN_NORM/GENERIC/ADJ/NOMERGE + 按作者合并相邻/零星朝代 + gn 人名归一 + grp 唐/五代合并）+ tools/site_label_override.json（418 位单标签过渡作者取站点标签，由站点 authors.json 生成）。作者键改为（人名，朝代）。
+- API 侧：live 库迁移（tools/plan_author_migration.py 离线算方案 + tools/apply_author_migration.py 分阶段执行 + tools/repair_author_migration.py 修 gn 分组 bug：byname 须按 gn 后的人名分组，否则「刘向 撰」与「刘向」被当两个人）。备份 build/consist/authors-backup-2026-11-07.json（build/ 已入 .gitignore）。authors 30,901→30,415，works.author_id 重映射 11,326 首，删孤儿行 498。验证：authors.works 与实际挂载一致、无悬空 author_id、无 works=0；/api/v1/authors?q=丁鹤年 返回 明 346 首，作者详情页作品列表正常。站点 30,429，净差 -14（残差：29+43 个键为南唐/隋末唐初等过渡人物判定分歧，79 个键的篇数按朝代分法不同——shici-data 与仓库对过渡作者的判定不同，须逐人定夺才能归零）。
+- 构建代码防回归：tools/turso_build.py 加 unify_authors() 后处理（重建时作者表即统一；另加 __main__ 守卫，可导入）+ tools/api_sync.py 末尾调 tools/author_rebuild.py 重建 authors（替代旧的按（人名，era）计 works）。author_rebuild.py 幂等，已验证二次运行 0 写。api_alias.py 是一次性脚本，只改名不改朝代分组，不影响统一。
+- 注意：/api/v1/stats 的 authors 数是边缘缓存（max-age=86400），迁移后最长 24 小时才刷新；DB 与 /api/v1/authors 已是新数。如需立即刷新，在 EdgeOne 控制台清 /api/v1/stats 缓存。

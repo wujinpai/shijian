@@ -5,3 +5,4 @@ node_modules/
 app/lib/turso-token.js
 __pycache__/
 .deploy-tmp/
+build/

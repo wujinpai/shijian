@@ -109,7 +109,7 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:20px}
 
 <div class="ep">
 <h3><span class="m">GET</span>/api/v1/authors?q={作者名}</h3>
-<p>按作者名查找（精确或前缀），按作品数排序。同名不同人会分别列出，可用 <code>dynasty</code> 区分。</p>
+<p>按作者名查找（精确或前缀），按作品数排序。同名不同人会分别列出，可用 <code>dynasty</code> 区分。作者按（人名，朝代）计数：同一人跨朝代会分别列出；朝代标签与站点一致（过渡朝代按站点判定）。</p>
 <pre><code>{ "query": "李白", "data": [{ "id": 2692, "name": "李白", "dynasty": "唐", "era": "唐", "works": 1649 }] }</code></pre>
 </div>
 

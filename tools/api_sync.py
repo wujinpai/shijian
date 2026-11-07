@@ -8,7 +8,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('REPO_READ', '/tmp/cc/chinese-classics')
 from canon_lib import *
 from repo_canon import gn
-# 与 turso_build.py 相同（那个文件导入即运行，不能 import）
+from author_rebuild import rebuild_authors
+# 与 turso_build.py 相同（ERAS/KIND 两边各一份，历史原因未合一）
 ERAS = ['先秦', '秦汉', '魏晋南北朝', '隋', '唐', '五代', '宋', '辽金', '元', '明', '清', '近代', '现代']
 KIND = {'诗': '诗', '词': '词', '曲': '曲'}
 CJK = re.compile(r'[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0003134f]+')
@@ -163,10 +164,9 @@ def apply():
                 ("INSERT INTO works_fts(rowid, title, body) SELECT id, title, body FROM works_grams WHERE id=?", [nid])]
     if not run_chunks('ins', list(enumerate(P['new'])), mk_ins, 60): return
     tq.run([('UPDATE merged SET new_id=(SELECT m2.new_id FROM merged m2 WHERE m2.old_id=merged.new_id) WHERE new_id IN (SELECT old_id FROM merged)', [])] * 3)
-    tq.run([('UPDATE authors SET works=(SELECT count(*) FROM works WHERE author_id=authors.id)', []),
-            ('DELETE FROM authors WHERE works=0', []),
-            ("UPDATE meta SET v=(SELECT count(*) FROM works) WHERE k='works'", []),
-            ("UPDATE meta SET v=(SELECT count(*) FROM authors) WHERE k='authors'", []),
+    # 作者表统一重建（与站点同一规则，见 tools/dyn_norm.py）：替代旧的按 (人名, era) 计 works。
+    rebuild_authors(tq.q, tq.run)
+    tq.run([("UPDATE meta SET v=(SELECT count(*) FROM works) WHERE k='works'", []),
             ("UPDATE meta SET v=(SELECT json_group_array(json_object('era', era, 'kind', kind, 'n', n)) FROM (SELECT era, kind, count(*) n FROM works GROUP BY era, kind)) WHERE k='by_era'", [])])
     pg['fin'] = 1; save()
     print('FINISHED', tq.q('select k, substr(v,1,80) v from meta'))

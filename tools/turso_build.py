@@ -1,6 +1,8 @@
 # chinese-classics (github.com/wujinpai/chinese-classics) -> SQLite file for Turso upload.
 # Output: shici/build/classics.db  (tables authors, works, works_fts[contentless FTS5 over CJK bigrams], meta)
 import json, os, re, sqlite3, glob, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from dyn_norm import normalize_works, gn, grp
 
 from paths import PARENT as ROOT
 SRC = f'{ROOT}/chinese-classics'
@@ -39,6 +41,45 @@ def pack():
 def files(d):
     import gzip
     return json.loads(gzip.open(f'{PACK}/{d}.json.gz', 'rt').read())
+
+def unify_authors(A, W):
+    """作者表统一（与站点 load.py / emit.py 同一规则，见 tools/dyn_norm.py）：
+    作者按 (人名, 朝代) 分组，朝代经 DYN_NORM + 按作者合并相邻/零星朝代 + 站点标签覆盖。
+    典籍按书作者分组（章作者只是异名变体）。返回重建后的 (A, W)，W 的 author_id 已重映射。"""
+    import collections as _collections
+    _agg = _collections.Counter()
+    _era_c = _collections.defaultdict(_collections.Counter)
+    _intro = {}
+    for _r in A:
+        _g = gn(_r[1])
+        if _r[4] and (_g not in _intro or _r[5] > _intro[_g][1]):
+            _intro[_g] = (_r[4], _r[5])
+    for _w in W:
+        if _w[6] == '典籍':
+            _ga, _gd = A[_w[2] - 1][1], A[_w[2] - 1][2]
+        else:
+            _ga, _gd = _w[3], _w[4]
+        _agg[(_ga, _gd)] += 1
+    _target, _map = normalize_works([(a, d, n) for (a, d), n in _agg.items()])
+    for _w in W:
+        if _w[6] == '典籍':
+            _ga, _gd = A[_w[2] - 1][1], A[_w[2] - 1][2]
+        else:
+            _ga, _gd = _w[3], _w[4]
+        _era_c[(gn(_ga), grp(_map[(_ga, _gd)]))][_w[5]] += 1
+    _newA = []
+    _key2aid = {}
+    for _i, ((_name, _dyn), _cnt) in enumerate(sorted(_target.items(), key=lambda kv: -kv[1]), 1):
+        _key2aid[(_name, _dyn)] = _i
+        _newA.append([_i, _name, _dyn, _era_c[(_name, _dyn)].most_common(1)[0][0], _intro.get(_name, (None, 0))[0], _cnt])
+    for _w in W:
+        if _w[6] == '典籍':
+            _ga, _gd = A[_w[2] - 1][1], A[_w[2] - 1][2]
+        else:
+            _ga, _gd = _w[3], _w[4]
+        _w[2] = _key2aid[(gn(_ga), grp(_map[(_ga, _gd)]))]
+    return _newA, W
+
 
 def main():
     if os.path.exists(OUT): os.remove(OUT)
@@ -97,6 +138,9 @@ def main():
                           1 if (w.get('title'), name) in famous else 0])
                 F.append((wid, grams(w.get('title', '')), grams(body)))
             cur[5] = n
+    A, W = unify_authors(A, W)
+    aid = len(A)
+    print('authors unified', aid, 'works', wid, flush=True)
     db.executemany('INSERT INTO authors VALUES (?,?,?,?,?,?)', A)
     db.executemany('INSERT INTO works VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', W)
     db.commit()
@@ -128,4 +172,5 @@ def fts():
     db.execute('PRAGMA journal_mode=WAL'); db.execute('PRAGMA wal_checkpoint(TRUNCATE)'); db.execute('VACUUM'); db.close()
     print('MB', os.path.getsize(OUT) // 2**20)
 
-pack() if sys.argv[1:] == ['pack'] else main()
+if __name__ == '__main__':
+    pack() if sys.argv[1:] == ['pack'] else main()
