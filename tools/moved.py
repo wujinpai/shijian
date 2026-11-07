@@ -1,6 +1,6 @@
 # 旧「历代补遗」id（790000–867999）→ 并入各合集后的新 id。输出 app/site/data/moved.json（下标 = 旧 id - 790000，0 = 无）
 import json
-R = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici'
+from paths import ROOT as R
 old = json.load(open(R + '/build/buyi_old_ids.json'))
 C = json.load(open(R + '/build/corpus.json'))
 key = {}

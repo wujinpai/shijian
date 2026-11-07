@@ -3,9 +3,10 @@
 # 需要 /tmp/api.db（tools/api_dump.py 导出）和 build/attrib/api_groups.json（tools/api_xdup.py）。
 # 用法：python3 api_fix.py plan   → 写 build/attrib/api_plan.json 并打印统计
 #       python3 api_fix.py apply  → 按 plan 改 Turso
-import json, re, sys, glob, sqlite3, collections, opencc
-sys.path.insert(0, '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/tools')
-R = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/build/attrib'
+import json, re, sys, glob, sqlite3, collections, opencc, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import BUILD
+R = os.path.join(BUILD, 'attrib')
 cc = opencc.OpenCC('t2s')
 N = re.compile(r'[^\u3400-\u9fff\U00020000-\U0003134f]')
 nz = lambda s: cc.convert(N.sub('', s))

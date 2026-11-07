@@ -1,5 +1,5 @@
 set -e
-cd /workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici
+cd "$(dirname "$0")/.."
 pip install -q opencc >/dev/null 2>&1 || true
 [ -d /tmp/cc/chinese-classics ] || (mkdir -p /tmp/cc && git clone -q --depth 1 https://github.com/wujinpai/chinese-classics.git /tmp/cc/chinese-classics)
 (cd /tmp/cc/chinese-classics && git log --oneline | head -1)

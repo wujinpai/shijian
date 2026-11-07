@@ -10,7 +10,7 @@ export const onRequest = handler(async (url) => {
   for (const k of ['author', 'dynasty', 'era', 'kind']) if (p.get(k)) { where.push(`w.${k} = ?`); args.push(p.get(k)); }
   const filt = where.length ? ' AND ' + where.join(' AND ') : '';
   const rows = await q(`SELECT ${WORK_COLS.split(', ').map((c) => 'w.' + c).join(', ')} FROM works_fts f JOIN works w ON w.id = f.rowid
-    WHERE works_fts MATCH ?${filt} ORDER BY f.rowid LIMIT ${size + 1} OFFSET ${(page - 1) * size}`, args);
+    WHERE works_fts MATCH ?${filt} ORDER BY f.rank LIMIT ${size + 1} OFFSET ${(page - 1) * size}`, args);
   const more = rows.length > size;
   return json({ query: s, page, size, has_more: more, data: rows.slice(0, size).map((r) => work(r, false)) });
 });

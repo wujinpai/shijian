@@ -1,6 +1,7 @@
-import json, urllib.request
+import json, os, urllib.request
+from paths import ROOT
 URL = 'https://shijian-v2-jisu.aws-ap-northeast-1.turso.io/v2/pipeline'
-TOK = open('/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/.secrets/turso-v2-full').read().strip()
+TOK = open(os.path.join(ROOT, '.secrets', 'turso-v2-full')).read().strip()
 def arg(v):
     if v is None: return {'type': 'null'}
     if isinstance(v, int): return {'type': 'integer', 'value': str(v)}

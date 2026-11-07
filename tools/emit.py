@@ -1,8 +1,7 @@
 import re
 # Stage 2: write static data shards into site/data
 import json, os, math, hashlib, collections, shutil, random
-B = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/build'
-D = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/app/site/data'
+from paths import BUILD as B, DATA as D
 for sub in ('p', 's', 'a', 'l'):
     shutil.rmtree(f'{D}/{sub}', ignore_errors=True); os.makedirs(f'{D}/{sub}', exist_ok=True)
 C = json.load(open(B + '/corpus.json'))
@@ -21,6 +20,25 @@ FAMOUS_SONG = set('苏轼 陆游 王安石 杨万里 黄庭坚 范成大 欧阳�
 
 def dump(path, obj):
     with open(path, 'w', encoding='utf-8') as f: json.dump(obj, f, ensure_ascii=False, separators=(',', ':'))
+
+# 大分片按字节切子分片（与 tools/split_big_shards.py 同规则，上限 600KB），边界记入 M['psplit']
+MAX_SHARD = 600 * 1024
+def dump_shard(k, lst):
+    raw = json.dumps(lst, ensure_ascii=False, separators=(',', ':'))
+    if len(raw.encode('utf-8')) <= MAX_SHARD:
+        dump(f'{D}/p/{k}.json', lst)
+        return
+    bounds, chunks, cur, cur_bytes = [0], [], [], 0
+    for i, r in enumerate(lst):
+        b = len(json.dumps(r, ensure_ascii=False).encode('utf-8')) if r else 4
+        if cur and cur_bytes + b > MAX_SHARD:
+            chunks.append(cur); bounds.append(i); cur, cur_bytes = [], 0
+        cur.append(r); cur_bytes += b
+    if cur: chunks.append(cur)
+    for sub, ch in enumerate(chunks): dump(f'{D}/p/{k}-{sub}.json', ch)
+    plain = f'{D}/p/{k}.json'
+    if os.path.exists(plain): os.remove(plain)
+    M.setdefault('psplit', {})[str(k)] = bounds
 
 def first_line(p):
     for x in p:
@@ -125,7 +143,7 @@ for r in C:
     while len(lst) < rel: lst.append(None)
     d = r.get('d') or coll_dyn[r['c']]
     lst.append([r['t'], r['a'], r['g'], r['p'], r.get('x') or 0, REF[grp(d) + '|' + r['a']], d])
-for k, lst in shards.items(): dump(f'{D}/p/{k}.json', lst)
+for k, lst in shards.items(): dump_shard(k, lst)
 
 idx.sort(key=lambda e: (-e[2]))
 dump(D + '/authors.json', idx)

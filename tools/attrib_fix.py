@@ -2,7 +2,7 @@
 # 输入 build/attrib/out*.json（每组 keep/author/title/drop），输出：改写 build/corpus.json；
 # app/site/data/merged.json（被并掉的旧 id → 保留 id）；build/attrib/decisions.json（供 API/仓库同步）。
 import json, glob, re, os, shutil
-R = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici'
+from paths import ROOT as R
 B = R + '/build'
 # 同一人异名 → 通行名（全站统一）
 import os

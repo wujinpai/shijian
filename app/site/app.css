@@ -22,6 +22,16 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--serif);lin
 a{color:inherit;text-decoration:none}
 a:hover{color:var(--accent)}
 button{font:inherit;color:inherit}
+/* 键盘焦点可见：链接/按钮/卡片/chip 统一描边 */
+a:focus-visible,button:focus-visible,input:focus-visible,.card:focus-visible,.chip:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+/* 视觉隐藏（仅供读屏器，如搜索框 label） */
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* 跳到正文：平时隐藏，键盘 Tab 时出现 */
+.skip{position:absolute;left:12px;top:-48px;z-index:50;background:var(--accent);color:#fff;padding:8px 14px;border-radius:8px;font:14px var(--sans);transition:top .15s}
+.skip:focus{top:12px;color:#fff}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:10px max(16px,env(safe-area-inset-left));padding-top:max(10px,env(safe-area-inset-top));
   background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(1.2) blur(10px);-webkit-backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:8px;flex:none}

@@ -1,6 +1,6 @@
 # v36 作者同人异名归一：仓库 9cee5450 → 站点重建 → 部署
 set -e
-cd /workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici
+cd "$(dirname "$0")/.."
 export REPO_READ=/tmp/cc/chinese-classics
 pip install -q opencc numpy tencentcloud-sdk-python-teo >/dev/null 2>&1 || true
 rm -f /tmp/repo_cache.pkl build/consist/unpaired.json
@@ -13,7 +13,7 @@ echo "== said $(date +%T)"; python3 -u tools/said_build.py 2>&1 | tail -3
 echo "== moved $(date +%T)"; python3 -u tools/moved.py 2>&1 | tail -2
 sed -i "s/const DV = 'v=15'/const DV = 'v=16'/" app/site/app.js
 sed -i "s/shici-shell-v35/shici-shell-v36/; s/shici-data-v15/shici-data-v16/" app/site/sw.js
-sed -i "s/app.js?v=33/app.js?v=34/g" app/site/index.html app/site/404.html app/site/sw.js
+sed -i "s/app.js?v=33/app.js?v=34/g" app/site/index.html app/site/sw.js
 echo "== deploy $(date +%T)"
 cd app && rm -f /tmp/app.zip && zip -qr -1 /tmp/app.zip . -x 'node_modules/*' '.edgeone/*' '.env' && cd ..
 npx -y edgeone@latest makers deploy /tmp/app.zip -n shijian -a global --skip-ai-gateway-sync -t "$EDGEONE_API_TOKEN" > deploy-run.txt 2>&1 || true

@@ -1,6 +1,6 @@
 # 分析：站点每条配到仓库哪一条；站点内部重复的合集对
 import json, collections, sys, time
-sys.path.insert(0, '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/tools')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from canon_lib import *
 t0 = time.time(); E = load_repo(); print('E', len(E), time.time() - t0, flush=True)
 C = json.load(open(B + '/corpus.json'))

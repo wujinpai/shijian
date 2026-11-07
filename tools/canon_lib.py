@@ -1,7 +1,7 @@
 # 统一数据（2026-11-06，用户：仓库为唯一数据源，站点/API/关于页一致、不重复）
 # 公共函数：读仓库（作品 + 典籍章节），文本归一，配对。
 import json, glob, os, re, pickle, collections, opencc
-P = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03'
+from paths import PARENT as P
 REPO = os.environ.get('REPO_READ', P + '/chinese-classics'); SH = P + '/shici'; B = SH + '/build'
 cc = opencc.OpenCC('t2s'); N = re.compile(r'[^\u3400-\u9fff\U00020000-\U0003134f]')
 class _T(dict):

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /s
+Disallow: /api/test
+Disallow: /api/v1/
+
+Sitemap: https://shijian.jisu.cn/sitemap.xml

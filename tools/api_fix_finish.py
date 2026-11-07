@@ -1,6 +1,8 @@
 # api_fix apply 的后半段（异名归并 + 统计），按 author_id 走索引，可重复执行
-import json, tq
-P = json.load(open('/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/build/attrib/api_plan.json')); AL = P['alias']
+import json, os
+import tq
+from paths import BUILD
+P = json.load(open(os.path.join(BUILD, 'attrib', 'api_plan.json'))); AL = P['alias']
 n = 0
 for old, new in AL.items():
     o = tq.q('select id, dynasty from authors where name=?', old)

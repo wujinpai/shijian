@@ -2,7 +2,7 @@
 # Output: shici/build/classics.db  (tables authors, works, works_fts[contentless FTS5 over CJK bigrams], meta)
 import json, os, re, sqlite3, glob, sys
 
-ROOT = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03'
+from paths import PARENT as ROOT
 SRC = f'{ROOT}/chinese-classics'
 OUT = '/tmp/classics.db'  # build on local disk: sqlite corrupts on JuiceFS
 

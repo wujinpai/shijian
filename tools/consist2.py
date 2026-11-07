@@ -1,6 +1,6 @@
 # 站点↔仓库逐篇配对。输出 build/consist/pair.json
 import json, glob, os, re, collections, sys, opencc, time
-P = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03'
+from paths import PARENT as P
 cc = opencc.OpenCC('t2s'); N = re.compile(r'[^\u3400-\u9fff\U00020000-\U0003134f]')
 TT = {}
 def _c(x):

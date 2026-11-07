@@ -10,7 +10,7 @@ function fetchRetry(u, tries = 3) {
     return fetch(u, { signal: ac.signal }).then(r => { clearTimeout(t); if (!r.ok) throw new Error(r.status + ' ' + u); return r; }, e => { clearTimeout(t); throw e; }); };
   return once().catch(e => tries > 1 ? new Promise(r => setTimeout(r, 400 * (4 - tries))).then(() => fetchRetry(u, tries - 1)) : Promise.reject(e));
 }
-const DV = 'v=18';
+const DV = 'v=19';
 function getJSON(u) {
   if (u.startsWith('/data/')) u += (u.includes('?') ? '&' : '?') + DV;
   if (!cache.has(u)) cache.set(u, fetchRetry(u).then(r => r.json()).catch(e => { cache.delete(u); throw e; }));
@@ -32,11 +32,43 @@ const movedId = async id => { try { const mg = await getJSON('/data/merged.json?
 const collBy = code => M.colls.find(c => c.code === code);
 const grp = d => (d === '唐' || d === '五代') ? '唐' : d;
 async function stub(id) { const k = Math.floor(id / M.CH); const a = await getJSON(`/data/s/${k}.json`); return a[id - k * M.CH]; }
-async function poem(id) { const k = Math.floor(id / M.PS); const a = await getJSON(`/data/p/${k}.json`); return a[id - k * M.PS]; }
+async function poem(id) { const k = Math.floor(id / M.PS); const sp = M.psplit && M.psplit[k];
+  if (sp) { const rel = id - k * M.PS; let sub = sp.length - 1; while (sub > 0 && rel < sp[sub]) sub--; const a = await getJSON(`/data/p/${k}-${sub}.json`); return a[rel - sp[sub]]; }
+  const a = await getJSON(`/data/p/${k}.json`); return a[id - k * M.PS]; }
 const prefetchPoem = id => { if (M && id >= 0) poem(id).catch(() => {}); };
 const idle = f => (window.requestIdleCallback || (cb => setTimeout(cb, 600)))(f);
 function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 2600); }
 function setTitle(t) { document.title = t ? `${t} · 诗笺` : '诗笺 · 古典诗文阅读'; }
+/* 路由级 meta：标题 / 描述 / OG / canonical / robots / JSON-LD，随视图更新。
+   o = {title, desc, url, robots, jsonld}；未给的项恢复首页默认或移除。 */
+const SITE_URL = 'https://shijian.jisu.cn';
+const HOME_DESC = '收录唐诗、宋词、宋诗、元曲、诗经、楚辞、论语、四书、蒙学等七十余万篇古典诗文，以及近现代新诗与旧体诗词，支持按标题、作者、诗句搜索。';
+function setMeta(o) {
+  o = o || {};
+  if (o.title !== undefined) setTitle(o.title);
+  const desc = o.desc !== undefined ? o.desc : HOME_DESC;
+  const set = (sel, val) => { const el = document.querySelector(sel); if (el && val != null) el.setAttribute('content', val); };
+  set('meta[name="description"]', desc);
+  set('meta[property="og:description"]', desc);
+  set('meta[name="twitter:description"]', desc);
+  const ogTitle = o.title ? `${o.title} · 诗笺` : '诗笺 · 古典诗文阅读';
+  set('meta[property="og:title"]', ogTitle);
+  set('meta[name="twitter:title"]', ogTitle);
+  if (o.url !== undefined) {
+    const abs = SITE_URL + o.url;
+    set('meta[property="og:url"]', abs);
+    let c = document.querySelector('link[rel="canonical"]');
+    if (!c) { c = document.createElement('link'); c.rel = 'canonical'; document.head.appendChild(c); }
+    c.href = abs;
+  }
+  let rb = document.querySelector('meta[name="robots"]');
+  if (o.robots) { if (!rb) { rb = document.createElement('meta'); rb.name = 'robots'; document.head.appendChild(rb); } rb.content = o.robots; }
+  else if (rb) rb.remove();
+  let ld = document.querySelector('#ldjson');
+  if (o.jsonld) { if (!ld) { ld = document.createElement('script'); ld.id = 'ldjson'; ld.type = 'application/ld+json'; document.head.appendChild(ld); } ld.textContent = JSON.stringify(o.jsonld); }
+  else if (ld) ld.remove();
+}
+const crumbs = items => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it[0], ...(it[1] ? { item: SITE_URL + it[1] } : {}) })) });
 const fmt = n => n >= 10000 ? (n / 10000).toFixed(n >= 100000 ? 0 : 1) + ' 万' : String(n);
 const favs = () => { try { return JSON.parse(localStorage.getItem('shici.fav') || '[]'); } catch (e) { return []; } };
 const setFavs = a => localStorage.setItem('shici.fav', JSON.stringify(a));
@@ -76,7 +108,7 @@ const skel = n => Array.from({ length: n }, () => '<div class="skel"></div>').jo
 /* ---------- views ---------- */
 const DAY = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
 async function viewHome() {
-  setTitle('');
+  setMeta({ title: '', url: '/', jsonld: { '@context': 'https://schema.org', '@type': 'WebSite', name: '诗笺', url: SITE_URL, potentialAction: { '@type': 'SearchAction', target: SITE_URL + '/s?q={search_term_string}', 'query-input': 'required name=search_term_string' } } });
   const m = await meta();
   const did = m.pool[DAY % m.pool.length];
   const total = m.colls.reduce((s, c) => s + c.count, 0);
@@ -88,7 +120,7 @@ async function viewHome() {
       <div class="stat"><b>${fmt(m.authors)}</b><span>位作者</span></div>
       <div class="stat"><b>${m.colls.length}</b><span>部合集</span></div>
       <div class="stat"><b>${m.lists.reduce((s, l) => s + l.count, 0)}</b><span>首选本名篇</span></div>
-      <a class="stat" href="javascript:void 0" id="rndBtn" style="grid-column:span 2;text-align:center"><b style="font-size:20px">随机一首 ↻</b><span>从精选中随意翻一页</span></a>
+      <button class="stat" id="rndBtn" type="button" style="grid-column:span 2;text-align:center;cursor:pointer"><b style="font-size:20px">随机一首 ↻</b><span>从精选中随意翻一页</span></button>
     </div>
   </section>
   <div class="sec-h"><h2>精选</h2></div>
@@ -109,7 +141,7 @@ const collCard = c => `<a class="coll" href="/c/${c.code}"><span class="nm">${es
 const authorHref = e => `/a/${e[3]}/${encodeURIComponent(grp(e[1]) + '|' + e[0])}`;
 
 async function viewColls() {
-  setTitle('合集'); const m = await meta();
+  setMeta({ title: '合集', desc: '按合集浏览中华古典诗文：全唐诗、全宋诗、全宋词、元曲、诗经、楚辞、典籍与近现代诗词。', url: '/c', jsonld: crumbs([['首页', '/'], ['合集']]) }); const m = await meta();
   app.innerHTML = `<div class="ph"><h1>合集</h1><p class="lead">按合集浏览，唐诗、宋诗可按体裁筛选。</p></div>
    <div class="sec-h"><h2>精选</h2></div><div class="colls">${m.lists.map(l => `<a class="coll" href="/l/${l.code}"><span class="nm">${esc(l.name)}</span><span class="dy">${l.count} 首</span><div class="ds">${esc(l.desc)}</div></a>`).join('')}</div>
    <div class="sec-h"><h2>全部合集</h2></div><div class="colls">${m.colls.map(collCard).join('')}</div>`;
@@ -137,7 +169,7 @@ const range = (a, n) => Array.from({ length: n }, (_, i) => a + i);
 
 async function viewColl(code, qs) {
   const m = await meta(); const c = collBy(code); if (!c) return notFound();
-  setTitle(c.name);
+  setMeta({ title: c.name, desc: `${c.name}（${c.dyn}）共 ${fmt(c.count)} 篇。${c.desc}`, url: `/c/${code}`, jsonld: crumbs([['首页', '/'], ['合集', '/c'], [c.name]]) });
   const gi = qs.get('g'); const G = genresOf(c);
   const sel = gi != null && G[+gi] ? G[+gi] : null;
   app.innerHTML = `<div class="ph"><div class="crumb"><a href="/">首页</a> › <a href="/c">合集</a></div>
@@ -153,8 +185,8 @@ async function viewColl(code, qs) {
 
 async function viewList(code) {
   const m = await meta(); const l = m.lists.find(x => x.code === code); if (!l) return notFound();
-  setTitle(l.name);
   const L = await getJSON(`/data/l/${code}.json`);
+  setMeta({ title: l.name, desc: `${l.name}共 ${L.length} 首。${l.desc}`, url: `/l/${code}`, jsonld: crumbs([['首页', '/'], ['精选', '/c'], [l.name]]) });
   const byG = {}; L.forEach(e => { const k = e[4] || '其他'; (byG[k] = byG[k] || []).push(e); });
   const S = new Map(L.map(e => [e[0], [e[1], e[2], e[3], e[4], l.name]]));
   app.innerHTML = `<div class="ph"><div class="crumb"><a href="/">首页</a> › 精选</div><h1>${esc(l.name)} <span class="muted">${L.length} 首</span></h1><p class="lead">${esc(l.desc)}</p></div>
@@ -181,7 +213,7 @@ async function loadAuthor(ref, key, page = 0) {
 async function viewAuthor(ref, key) {
   await meta();
   const a = await loadAuthor(ref, key, 0); if (!a) return notFound();
-  setTitle(a.n);
+  setMeta({ title: a.n, desc: `${a.n}〔${a.d}〕，共 ${a.pages > 1 ? '约 ' + (a.pages * 500) : a.L.length} 篇作品。${realBio(a.b) ? String(a.b).replace(/\s+/g, '').slice(0, 60) : ''}`, url: `/a/${ref}/${encodeURIComponent(key)}`, jsonld: crumbs([['首页', '/'], ['作者', '/authors'], [a.n]]) });
   app.innerHTML = `<div class="ph"><div class="crumb"><a href="/">首页</a> › <a href="/authors">作者</a></div>
    <div class="acard" style="margin:0"><span class="seal">${esc(a.n[0])}</span><div style="flex:1;min-width:0"><h3>${esc(a.n)} <span class="muted">〔${esc(a.d)}〕 · 共 <span id="acnt">${a.pages > 1 ? '约 ' + (a.pages * 500) : a.L.length}</span> 篇</span></h3>
    ${realBio(a.b) ? `<div class="bio" id="bio">${paras(a.b)}</div><button class="linkbtn" id="bioT">展开简介</button>${wikiSrc(a)}` : (['佚名', '无名氏'].includes(a.n) ? '<p class="nodata">作者佚名，生平不详。</p>' : '<p class="nodata">暂无简介。</p>' + aiBtn(`/api/ai/author?a=${encodeURIComponent(a.n)}&d=${encodeURIComponent(a.d)}`, 'AI 生成简介'))}</div></div></div>
@@ -204,7 +236,7 @@ async function viewAuthor(ref, key) {
 }
 
 async function viewAuthors(qs) {
-  setTitle('作者'); await meta();
+  setMeta({ title: '作者', desc: '按朝代与作品数浏览诗笺收录的全部作者。', url: '/authors', jsonld: crumbs([['首页', '/'], ['作者']]) }); await meta();
   app.innerHTML = `<div class="ph"><div class="crumb"><a href="/">首页</a> › 作者</div><h1>作者</h1><p class="lead">共 ${fmt(M.authors)} 位，按作品数排序。</p></div>
    <div class="toolbar"><input id="af" class="chip" style="cursor:text;min-width:220px;border:1px solid var(--line)" placeholder="输入作者名" value="${esc(qs.get('q') || '')}"></div>
    <div class="filters"><div class="row"><span class="lbl">朝代</span><div class="chips" id="dch"></div></div></div>
@@ -240,7 +272,8 @@ async function viewPoem(id) {
   app.innerHTML = `<div class="poem-wrap"><div class="poem"><div class="skel" style="height:300px;border:none"></div></div><aside class="side"></aside></div>`;
   const r = await poem(id); if (!live()) return; if (!r) { const n = await movedId(id); if (n && n !== id && live()) { history.replaceState(null, '', '/p/' + n); const f = favs(); if (f.includes(id)) setFavs([...new Set(f.map(v => v === id ? n : v))]); return viewPoem(n); } return notFound(); }
   const [t, a, g, p, x0, ref, dyn] = r; const x = x0 || {};
-  setTitle(`${t} · ${a}`);
+  const firstLines = p.filter(l => !/^〔.*〕$/.test(l)).slice(0, 2).join('');
+  setMeta({ title: `${t} · ${a}`, desc: `${firstLines.slice(0, 80)}——〔${dyn}〕${a}《${t}》`, url: `/p/${id}`, jsonld: { '@context': 'https://schema.org', '@graph': [{ '@type': 'Quotation', text: p.join('\n').slice(0, 500), author: { '@type': 'Person', name: a }, citation: { '@type': 'CreativeWork', name: `《${t}》`, url: SITE_URL + `/p/${id}` } }, crumbs([['首页', '/'], [c.name, `/c/${c.code}`], [`《${t}》`]])] } });
   const prose = !!x.f;
   const gi = genresOf(c).findIndex(e => e[0] === g);
   const isShi = ['tang', 'songshi', 'shuimo', 'jiuti'].includes(c.code) || (c.code === 'mengxue' && g === '千家诗');
@@ -374,7 +407,7 @@ function copy(s, msg) { (navigator.clipboard ? navigator.clipboard.writeText(s) 
 /* ---------- search ---------- */
 async function viewSearch(qs) {
   const q = (qs.get('q') || '').trim(); const fc = qs.get('c') || ''; const fd = qs.get('d') || ''; const forceText = qs.get('t') === '1';
-  $('#q').value = q; setTitle(q ? `搜索：${q}` : '搜索');
+  $('#q').value = q; setMeta({ title: q ? `搜索：${q}` : '搜索', robots: 'noindex' });
   await meta();
   if (!q) { app.innerHTML = '<div class="empty">输入标题、作者或诗句开始搜索，例如：李白、静夜思、明月</div>'; return; }
   app.innerHTML = `<div class="ph"><h1>搜索「${esc(q)}」</h1><p class="lead" id="sinfo">检索中…</p></div><div id="acards"></div><div class="filters" id="facets"></div><div class="grid" id="list">${skel(6)}</div><div class="more" id="more"></div>`;
@@ -446,7 +479,7 @@ async function viewSearch(qs) {
 }
 
 async function viewFav() {
-  setTitle('收藏'); await meta(); let f = favs();
+  setMeta({ title: '收藏', robots: 'noindex' }); await meta(); let f = favs();
   if (f.length) { const mg = await getJSON('/data/merged.json?v=1').catch(() => ({})); if (f.some(id => mg[id])) { f = [...new Set(f.map(id => mg[id] || id))]; setFavs(f); } }
   if (f.some(id => id >= OLD_BUYI[0] && id < OLD_BUYI[1])) { const n = await Promise.all(f.map(async id => (await movedId(id)) || id)); f = [...new Set(n)]; setFavs(f); }
   app.innerHTML = `<div class="ph"><h1>收藏 <span class="muted">${f.length} 篇</span></h1><p class="lead">收藏保存在本机浏览器中。</p></div><div class="grid" id="list"></div><div class="more" id="more"></div>`;
@@ -454,7 +487,7 @@ async function viewFav() {
   pager($('#list'), $('#more'), f, stub, 36);
 }
 async function viewAbout() {
-  setTitle('关于'); const m = await meta();
+  setMeta({ title: '关于', desc: '诗笺收录七十余万篇中华古典诗文与典籍，数据来源、体裁说明与收录合集。', url: '/about', jsonld: crumbs([['首页', '/'], ['关于']]) }); const m = await meta();
   const withNotes = { huajian: '注释', nantang: '注释', shuimo: '赏析', youmeng: '评点', tang: '唐诗三百首标签；部分篇目附《水墨唐诗》赏析', songci: '宋词三百首标签', mengxue: '千字文拼音、百家姓郡望、题解', guwen: '出处', xiantang: '朝代分类', xinshi: '部分作者简介' };
   app.innerHTML = `<div class="ph"><h1>关于本站</h1></div><div class="panel" style="max-width:760px">
    <p>本站收录的古典诗词与典籍数据来自 <a href="https://github.com/wujinpai/chinese-classics" target="_blank" rel="noopener" style="color:var(--accent)">chinese-classics</a>。「古人说」的精选句由本站从上述原文中整理，每句都链到原文。原文为繁体者已用 OpenCC 转为简体，个别异体字可能保留原貌。本站另提供<a href="/api" style="color:var(--accent)">开放 API</a>。</p>
@@ -517,7 +550,7 @@ function saidCard(x, i) {
     <div class="sb"><span class="sl"><a href="/p/${x.pid}" style="color:var(--accent)">阅读全文 ›</a></span><button class="btn" data-card>生成卡片</button></div></div>`;
 }
 async function viewSaid(qs) {
-  const q = (qs.get('q') || '').trim(); setTitle(q ? `古人说：${q}` : '古人说');
+  const q = (qs.get('q') || '').trim(); setMeta(q ? { title: `古人说：${q}`, robots: 'noindex' } : { title: '古人说', desc: '输入一句现代话或网络热梗，找古人说过的原句。', url: '/said', jsonld: crumbs([['首页', '/'], ['古人说']]) });
   const ex = ['我爱你', '你真好看', '我 emo 了', '太卷了，想躺平', '想家了', '这事包的', '算了，不内耗了', '好久不见'];
   app.innerHTML = `<div class="ph"><h1>古人说</h1><p class="lead">输入一句现代话或网络热梗，找古人说过的原句。</p></div>
     <form class="saidf" id="saidf"><input id="sq" type="search" maxlength="60" placeholder="比如：我 emo 了" value="${esc(q)}" enterkeyhint="search" autocomplete="off"><button class="btn pri">找一句</button></form>
@@ -609,13 +642,13 @@ async function posterModal(t, a, dyn, p, prose, shareLink) {
     };
   } catch (e) { ov.querySelector('.pimg').innerHTML = '<div class="empty">海报生成失败</div>'; }
 }
-function notFound() { setTitle('页面不存在'); app.innerHTML = '<div class="nf"><div class="c">四〇四 · 页面不存在</div><p class="v">只在此山中，云深不知处。</p><p class="b">〔唐〕贾岛《寻隐者不遇》</p><a class="pri" href="/">回到首页</a><a href="/api">开放 API</a></div>'; }
+function notFound() { setMeta({ title: '页面不存在', robots: 'noindex' }); app.innerHTML = '<div class="nf"><div class="c">四〇四 · 页面不存在</div><p class="v">只在此山中，云深不知处。</p><p class="b">〔唐〕贾岛《寻隐者不遇》</p><a class="pri" href="/">回到首页</a><a href="/api">开放 API</a></div>'; }
 
 /* ---------- 开放 API：文档与调试台（站内路由，不刷新页面） ---------- */
 const apiBar = on => `<div class="apibar"><a href="/api" class="${on === 'doc' ? 'on' : ''}">接口文档</a><a href="/api/test" class="${on === 'test' ? 'on' : ''}">调试台</a></div>`;
 let apiDocHTML = null;
 async function viewApi() {
-  setTitle('开放 API');
+  setMeta({ title: '开放 API', desc: '诗笺开放 API：免费查询七十余万篇中国古典诗词与典籍，支持全文检索、作者、随机一首。', url: '/api' });
   if (!apiDocHTML) {
     const d = new DOMParser().parseFromString(await (await fetch('/api-doc.html')).text(), 'text/html'), m = d.querySelector('main');
     m.querySelectorAll('script,.try,#out').forEach(x => x.remove());
@@ -636,7 +669,7 @@ const API_EP = {
   stats: { name: '统计', path: () => '/api/v1/stats' },
 };
 async function viewApiTest(qs) {
-  setTitle('API 调试台');
+  setMeta({ title: 'API 调试台', robots: 'noindex' });
   let cur = API_EP[qs.get('ep')] ? qs.get('ep') : 'search', page = +qs.get('page') || 1;
   const nav = NAV;
   app.innerHTML = `<div class="apit">${apiBar('test')}<div class="tabs"></div><form></form><div class="rq"></div><div class="res"></div><div class="raw"></div></div>`;
@@ -696,7 +729,8 @@ document.addEventListener('keydown', e => keyNav && keyNav(e));
 const pf = e => { const a = e.target.closest && e.target.closest('a[href^="/p/"]'); if (a) prefetchPoem(+a.getAttribute('href').slice(3)); };
 document.addEventListener('touchstart', pf, { passive: true }); document.addEventListener('mouseover', pf);
 $('#q').addEventListener('focus', () => { authors().catch(() => {}); pop().catch(() => {}); });
-idle(() => setTimeout(() => { authors().catch(() => {}); pop().catch(() => {}); }, 2500));
+// 注意：不在空闲时全局预取 authors.json + pop.json（共 3.3MB）；只在搜索框 focus、
+// 搜索页、作者页、列表页按需加载，避免只读一首诗的用户白下 3.3MB。
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 if (location.pathname === '/index.html') history.replaceState(null, '', '/' + location.search);
 async function route() {

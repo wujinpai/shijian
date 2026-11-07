@@ -4,8 +4,9 @@ import collections
 import json, glob, os, re, math, sys
 import opencc
 
-SRC = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici-data'
-OUT = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/shici/build'
+from paths import PARENT, BUILD
+SRC = os.path.join(PARENT, 'shici-data')
+OUT = BUILD
 os.makedirs(OUT, exist_ok=True)
 cc = opencc.OpenCC('t2s.json')
 def s(x):
@@ -238,7 +239,7 @@ C('mengxue', '蒙学', '历代', '三字经、千字文、百家姓、弟子规�
 
 
 # ---- 近现代（yuxqiu/modern-poetry 的 China-modern-poetry，Apache-2.0；只收中国部分，剔除外国诗译作）
-MP = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/modern-poetry/China-modern-poetry'
+MP = os.path.join(PARENT, 'modern-poetry', 'China-modern-poetry')
 def mp_load(sub):
     out = []
     for f in sorted(glob.glob(f'{MP}/{sub}/*.json'), key=natkey):
@@ -290,7 +291,7 @@ C('jiuti', '近现代旧体诗词', '近现代', '清末民国以来诗人以传
 
 # ---- 先唐诗（Werneror/Poetry，MIT）：先秦至隋的诗歌，去掉与诗经/楚辞/曹操诗集重复者
 import csv
-WP = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/werneror'
+WP = os.path.join(PARENT, 'werneror')
 def ckey(paras): return ''.join(CJK.findall(''.join(paras)))[:16]
 have = set()
 for c in colls:
@@ -329,7 +330,7 @@ for dyn, t, a, body in rows:
 C('xiantang', '先唐诗', '先秦至隋', '诗经、楚辞之外的先秦至隋代诗歌：汉乐府、古诗十九首、建安风骨、陶渊明、谢灵运、鲍照、庾信、南北朝民歌等。', items, sort='genre_pop', genres_order=['先秦', '汉', '魏晋', '南北朝', '隋'])
 
 # ---- 先秦两汉典籍（维基文库，公有领域文本，繁转简、去注疏）
-PC = '/workspace/projects/d6a0e27a-ed6d-41d5-9b29-1ad9cc158e03/prose-classics'
+PC = os.path.join(PARENT, 'prose-classics')
 items = []
 for bk in ('道德经', '庄子', '荀子', '韩非子', '尚书', '礼记', '左传', '战国策', '史记'):
     for x in json.load(open(f'{PC}/{bk}.json', encoding='utf-8')):

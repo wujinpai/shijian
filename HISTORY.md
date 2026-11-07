@@ -65,3 +65,13 @@
 
 ## v42（2026-11-06）
 - iOS 分享链接「拷贝」只得到诗句：navigator.share 去掉 text，只传 title+url（作品页、古人说）。app.js v42、SHELL v43。线上 dpbfwmfwv3nc。
+
+## v43（2026-11-07）SEO + 性能 + 工程债（审查报告驱动）
+- SEO：tools/sitemap.py（读 data/s/ stubs 枚举真实 id）生成 sitemap.xml 索引 + 16 个诗页分片（每片 5 万条，共 785,947 篇）+ sitemap-pages.xml（首页/合集/选本/作者 30,464 条）+ robots.txt（禁 /s、/api/test、/api/v1/）；静态文件优先于 edgeone.json 的 /* rewrite（站内 /data、/fonts 已是此机制），部署后 curl 验证。
+- 路由级 meta：app.js 新增 setMeta()，各视图更新 description/og:title/og:description/og:url/canonical/robots/JSON-LD；首页 WebSite+SearchAction，诗页 Quotation+面包屑，合集/作者/选本页面包屑；搜索/收藏/调试台/404 加 noindex。首页与 manifest 的「三十余万篇」→「七十余万篇」，api-doc.html「八十余万篇」→「七十余万篇」并补 OG/canonical。og:image 改为 1200×630 自制分享图 site/og-image.png（绝对地址）。
+- 性能：删每页空闲预取 authors.json+pop.json（3.3MB），只在搜索框 focus/搜索页/作者页/列表页按需加载；修 meta.json preload URL 与 DV 不一致（v=13 vs v=18，永远命中不了）；拆超大 p/ 分片（711/795/796，最大 2.4MB→每片 ≤600KB，tools/split_big_shards.py + emit.py dump_shard，边界记 meta.json psplit，前端 poem() 查表）；SW DATA 缓存上限 900→2,000。
+- 数据/索引：tools/index.py 倒排编码位宽由写死 20 位改为按最大 id 动态算（当前最大 id 948,515，20 位上限 1,048,575，只剩约 10 万余量）并加断言；前端不感知位宽，无需改 app.js；新旧索引不可混用，重建须整库重建（本地无 build/corpus.json，本次只改代码未重建索引）。
+- 工程：tools/paths.py 集中仓库根（SHIJIAN_ROOT 环境变量或按文件位置推断），18 个脚本的硬编码 /workspace/projects/d6a0e27a-... 全部改为相对路径；tools/version.json + tools/bump.py 集中版本号（DV/SHELL/DATA/app.js/app.css/meta.json preload），发版先 bump.py --inc；tools/deploy.sh 为新标准部署脚本（版本应用→sitemap 生成→压缩→打包→部署失败即退出→清缓存；zip 放仓库内 .deploy-tmp/，/tmp 只有 512MB 装不下；dep.sh 的 || true 已去掉）；app.js 72KB→59KB、app.css 24KB→22KB（部署时 terser/clean-css 压缩，失败则发原文件）。
+- API：search.js ORDER BY f.rowid → f.rank（FTS5 bm25 相关度，部署后验证搜索）；random.js max_id 缓存加 1 小时 TTL（原来模块级变量永不刷新）。
+- 可访问性：:focus-visible 统一样式、skip link、搜索框 label、首页随机按钮由 <a href="javascript:void 0"> 改为 <button>、prefers-reduced-motion。
+- app.js v43、SHELL v44、DV v19、DATA v19、app.css v20。未做：注释/赏析覆盖率（内容工作）、站点与 API 作者数差 470 位（站点 30,431 / API 30,901，待核对口径）。
