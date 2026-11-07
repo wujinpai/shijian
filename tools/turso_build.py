@@ -138,6 +138,15 @@ def main():
                           1 if (w.get('title'), name) in famous else 0])
                 F.append((wid, grams(w.get('title', '')), grams(body)))
             cur[5] = n
+    # v45 逐首朝代覆盖：重建时不把已修正的朝代改回去（见 tools/poem_dyn_override.py）。
+    # 典籍按书作者分组，书的作者行朝代须同步改（仅当与章节原朝代一致时）。
+    from poem_dyn_override import apply_override
+    for _w in W:
+        _nd, _ne = apply_override(_w[3], _w[1], _w[4], _w[5], _w[12])
+        if (_nd, _ne) != (_w[4], _w[5]):
+            if _w[6] == '典籍' and A[_w[2] - 1][2] == _w[4]:
+                A[_w[2] - 1][2] = _nd
+            _w[4], _w[5] = _nd, _ne
     A, W = unify_authors(A, W)
     aid = len(A)
     print('authors unified', aid, 'works', wid, flush=True)

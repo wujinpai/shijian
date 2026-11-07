@@ -46,6 +46,10 @@ def repo_rows():
             out.append(dict(title=w.get('title', ''), author=name, dynasty=j.get('dynasty', era), era=era, kind=kind, book=None, chapter=w.get('chapter'),
                             section=w.get('section'), rhythmic=w.get('rhythmic'), source=None, content=body,
                             notes=json.dumps(ann, ensure_ascii=False) if ann else None, famous=1 if (w.get('title'), name) in famous else 0, desc=j.get('author_desc')))
+    # v45 逐首朝代覆盖：下次同步/重建时不把已修正的朝代改回去（见 tools/poem_dyn_override.py）。
+    from poem_dyn_override import apply_override
+    for r in out:
+        r['dynasty'], r['era'] = apply_override(r['author'], r['title'], r['dynasty'], r['era'], r['content'])
     return out
 
 def plan():

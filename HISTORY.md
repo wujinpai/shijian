@@ -76,6 +76,13 @@
 - 可访问性：:focus-visible 统一样式、skip link、搜索框 label、首页随机按钮由 <a href="javascript:void 0"> 改为 <button>、prefers-reduced-motion。
 - app.js v43、SHELL v44、DV v19、DATA v19、app.css v20。未做：注释/赏析覆盖率（内容工作）、站点与 API 作者数差 470 位（站点 30,431 / API 30,901，待核对口径）。
 
+## v45（2026-11-07）残差 -14 统一 + 陈毅三人拆分（用户定夺：统一吧）
+- 干跑验证（tools/plan_v45_unify.py → plan_v45_resolve.py，全文 nz 配对，3,119 首全部配上、0 遗留）：逐首修正 1,972 首（dynasty/era），预测与站点逐键一致（佚名除外）。live 执行（tools/apply_v45_unify.py，备份 build/consist/v45-backup-{works,authors,meta}-2026-11-07.json）：works 1,972 首改朝代，authors 30,415→30,428（insert 28 / update 86 / delete 16，works 重映射 68 组），校验全过（works 785,947、悬空 author_id 0、works 计数不一致 0、works=0 作者 0）；meta.works/by_era 已重算。站点归一键 30,429 vs live 30,428，仅差佚名 2 键（已接受现状：两边佚名总数同为 8,245 首，分布不同，不动）。
+- 陈毅三人拆分：同名三人曾并成一人（站点清 24 + 宋 2；live 宋 2/清 24）。考据：清 13 首是清代陈毅（字直方，号古渔，《晚晴簃诗汇》卷八十六有《晓过黄叶岭》）；近现代 11 首是元帅陈毅（青松、梅岭三章等，源近现代旧体诗词合集）；宋 2 首（归云洞、决涧院）暂按宋人同名保留（证据弱于清代一条）。拆分后：清 13（id 28447 不变）/近现代 11（新 id 31492，intro 为元帅简介）/宋 2（id 12927 不变）。站点只改这 11 首：p/ 分片朝代改近现代、作者 ref 改新分桶 23（md5('近现代|陈毅')%256）；a/202.json 清条目 24→13、简介清空；新建 a/23.json「近现代|陈毅」条目（简介随诗走）；authors.json 清 13/近现代 11/宋 2；pop.json dyb 改 11 首；meta.json authors 30431→30432。数据版本 19→20（DATA v20，SHELL v44 不变）。
+- 耐久：tools/poem_dyn_override.json（1,972 条，键为 (gn 作者，标题，sha1(nz 全文))，生成脚本 tools/gen_poem_dyn_override.py）+ tools/poem_dyn_override.py，api_sync.repo_rows() 与 turso_build.py 主循环均已接覆盖钩子；dyn_norm.py 与 load.py 的 NOMERGE 同步加 7 人（陈毅、李好古、释子温、孙光宪、李世民、王谟、贾岛：站点把这些人的朝代分开，ADJ/零星规则会误并）。抽查覆盖表 12/12 能在本地 classics 仓命中。
+- 遗留风险（与本次修改无关、此前已存在，执行前须先处理）：元帅陈毅 11 首在当前 chinese-classics 仓中不存在（仓中只有清诗/宋诗两个陈毅文件），api_sync plan() 会把它们列为 gone，apply 时会删除——在查清 gone 清单前绝不能跑 api_sync apply。另：唐诗/文字蒙求.json 的 author 字段是简介长串、dynasty 为唐（王筠实为清代人），王筠 4 卷典籍的覆盖表条目在仓清理前可能无法命中；站点把清代王筠的 5 首（文字蒙求 4 卷 + 明妃怨）归在南北朝王筠名下，属站点侧同名合并问题，本次按站点现状统一，未拆分。
+- 部署：需新的一次性 EdgeOne token（旧 token 单次已用）。部署后清 API 缓存（/api/v1/authors、/api/v1/stats，60 天节点缓存），验证：API 陈毅三键、徐铉宋 353、王翰明 513；站点开《雪夜行军》确认〔近现代〕。
+
 ## v44（2026-11-07）作者朝代标签统一（站点与 API 同一规则）
 - 原因：站点 30,431 位 vs API 30,901 位，差 470。live Turso 只读核对：两边是同一批 29,771 位作者、785,947 篇，一个不少；零作品作者 0。差全在计数口径：API 按（人名，era）计，1,017 人跨朝代占多行；站点按（朝代，人名）计且唐/五代合并，622 人多行；另 3,127 人两边朝代标签不同（站点取首诗朝代，API 用仓库 era）。根子是站点 load.py 会把过渡朝代归一（DYN_NORM：明末清初→明、元末明初→元、唐末宋初→五代、近代→近现代）并按作者合并相邻/零星朝代，API 原样保留。
 - 统一规则：tools/dyn_norm.py（DYN_NORM/GENERIC/ADJ/NOMERGE + 按作者合并相邻/零星朝代 + gn 人名归一 + grp 唐/五代合并）+ tools/site_label_override.json（418 位单标签过渡作者取站点标签，由站点 authors.json 生成）。作者键改为（人名，朝代）。

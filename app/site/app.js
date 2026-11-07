@@ -10,7 +10,7 @@ function fetchRetry(u, tries = 3) {
     return fetch(u, { signal: ac.signal }).then(r => { clearTimeout(t); if (!r.ok) throw new Error(r.status + ' ' + u); return r; }, e => { clearTimeout(t); throw e; }); };
   return once().catch(e => tries > 1 ? new Promise(r => setTimeout(r, 400 * (4 - tries))).then(() => fetchRetry(u, tries - 1)) : Promise.reject(e));
 }
-const DV = 'v=19';
+const DV = 'v=20';
 function getJSON(u) {
   if (u.startsWith('/data/')) u += (u.includes('?') ? '&' : '?') + DV;
   if (!cache.has(u)) cache.set(u, fetchRetry(u).then(r => r.json()).catch(e => { cache.delete(u); throw e; }));

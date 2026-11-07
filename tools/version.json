@@ -1,1 +1,8 @@
-{"_comment":"版本号集中管理（v43）：以前 DV/SHELL/DATA/app.js/app.css/meta.json 各自散落在 4 个文件里手工 sed，漏 bump 即导致用户 7 天旧数据。改版时先 python3 tools/bump.py --inc，再由 bump.py 写回各文件。","appcss":20,"appjs":43,"data":19,"dv":19,"shell":44}
+{
+ "_comment": "版本号集中管理（v43）：以前 DV/SHELL/DATA/app.js/app.css/meta.json 各自散落在 4 个文件里手工 sed，漏 bump 即导致用户 7 天旧数据。改版时先 python3 tools/bump.py --inc，再由 bump.py 写回各文件。",
+ "appcss": 20,
+ "appjs": 43,
+ "data": 20,
+ "dv": 20,
+ "shell": 44
+}
